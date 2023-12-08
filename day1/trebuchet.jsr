@@ -1,0 +1,87 @@
+#!/usr/bin/env jstar
+
+// Matches '(c1)+c2....cn' where c1 is the first char of 'str', c2 the second and so on
+class NumberDFA
+    construct(str, num)
+        this.state = -1
+        this.str = str
+        this.num = num
+    end
+
+    fun transition(c)
+        if this.str[this.state + 1] == c
+            this.state += 1
+        elif this.str[0] == c
+            this.state = 0
+        else
+            this.state = -1
+        end
+
+        if this.state == #this.str - 1
+            this.state = -1
+            return this.num
+        else
+            return null
+        end
+    end
+end
+
+fun transitionAll(dfas, c)
+    var num = null
+    for var dfa in dfas
+        var res = dfa.transition(c)
+        if res
+            num = res
+        end
+    end
+    return num
+end
+
+fun toNum(c)
+    var num = std.char(c) - 0x30
+    return num if num >= 0 and num <= 9 else null
+end
+
+fun computeNumber(line)
+    var dfas = [
+        NumberDFA("one", 1),
+        NumberDFA("two", 2),
+        NumberDFA("three", 3),
+        NumberDFA("four", 4),
+        NumberDFA("five", 5),
+        NumberDFA("six", 6),
+        NumberDFA("seven", 7),
+        NumberDFA("eight", 8),
+        NumberDFA("nine", 9),
+    ]
+
+    var first, last = null, null
+
+    for var c in line.strip()
+        var num = transitionAll(dfas, c) or toNum(c)
+        if num
+            if !first
+                first = last = num
+            else
+                last = num
+            end
+        end
+    end
+
+    return first * 10 + last
+end
+
+if __name__ == "__main__"
+    import io
+    import sys
+
+    if #argv != 1
+        io.stderr.writeln("Usage: trebuchet.jsr file.txt")
+        sys.exit(-1)
+    end
+
+    with io.File(argv[0], "r") f
+        var sum = f.map(computeNumber).sum() 
+        print(sum)
+    end
+end

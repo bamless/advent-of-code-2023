@@ -1,0 +1,42 @@
+#!/usr/bin/env jstar
+
+var cubes = {
+    'red'  : 12,
+    'green': 13,
+    'blue' : 14,
+}
+
+fun solve(game, cubes)
+    return !game.
+        map(|round| => round.map(|color| => round[color] > cubes[color]).any()).
+        any()
+end
+
+if __name__ == '__main__'
+    import io
+    import re
+
+    with io.File(argv[0], "r") f
+        var res = 0
+
+        for var line in f
+            var gameId, gameStr = line.strip().split(': ')
+            var id = std.int(re.match(gameId, 'Game (%d+)'))
+            var rounds = gameStr.split('; ').map(|round| => round.split(', '))
+
+            var game = [
+                ...rounds.
+                    map(|round| => round.
+                        map(|r| => r.split(' ')).
+                        map(|r| => (r[1], std.int(r[0]))).
+                        collect(Table))
+            ]
+
+            if solve(game, cubes)
+                res += id
+            end
+        end
+
+        print(res)
+    end
+end

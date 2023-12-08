@@ -1,0 +1,37 @@
+#!/usr/bin/env jstar
+
+fun minCubesPower(game)
+    var cubesBycolor = {
+        'red'  : game.map(|round| => round['red'] or 1).collect(List),
+        'blue' : game.map(|round| => round['blue'] or 1).collect(List),
+        'green': game.map(|round| => round['green'] or 1).collect(List),
+    }
+    return cubesBycolor.
+        map(|color| => cubesBycolor[color].max()).
+        reduce(1, |a, b| => a * b)
+end
+
+if __name__ == '__main__'
+    import io
+
+    with io.File(argv[0], "r") f
+        var res = 0
+
+        for var line in f
+            var _, gameStr = line.strip().split(': ')
+            var rounds = gameStr.split('; ').map(|round| => round.split(', '))
+
+            var game = [
+                ...rounds.
+                    map(|round| => round.
+                        map(|r| => r.split(' ')).
+                        map(|r| => (r[1], std.int(r[0]))).
+                        collect(Table))
+            ]
+
+            res += minCubesPower(game)
+        end
+
+        print(res)
+    end
+end

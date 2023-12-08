@@ -1,0 +1,33 @@
+#!/usr/bin/env jstar
+
+import io
+import re
+
+fun interesct(s1, s2)
+    return s1.filter(|k| => s2.contains(k)).collect(Tuple)
+end
+
+fun computePoints(win, nums)
+    var matches = interesct(win, nums)
+    return 2^(#matches - 1) if #matches > 0 else 0
+end
+
+with io.File(argv[0], "r") f
+    var total = 0
+    for var line in f
+        var winStr, numStr = line.split(':')[1].strip().split(' | ')
+
+        var win = re.lazyMatchAll(winStr, "(%d+)").
+            map(std.int).
+            map(|n| => (n, true)).
+            collect(Table)
+
+        var nums = re.lazyMatchAll(numStr, "(%d+)").
+            map(std.int).
+            map(|n| => (n, true)).
+            collect(Table)
+
+        total += computePoints(win, nums)
+    end
+    print(total)
+end

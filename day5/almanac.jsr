@@ -1,0 +1,107 @@
+#!/usr/bin/env jstar
+
+import io
+import math
+
+fun parseAlmanac(f)
+    var almanac = []
+
+    // skip first section header and newline
+    f.readLine() 
+    f.readLine() 
+
+    for ;;
+        var line, section = null, []
+
+        while (line = f.readLine()) and !line.contains(":")
+            if (line = line.strip()) != ""
+                section.add(line.split(" ").map(std.int).collect(Tuple))
+            end
+        end
+
+        almanac.add(section.sorted(|a, b| => a[1] - b[1]))
+
+        if !line
+            break
+        end
+    end
+
+    return almanac
+end
+
+fun mapToNextSection(section, range)
+    var mappedRanges = []
+    var pairsToProcess = [(range[0], range[0] + range[1] - 1)]
+
+    while #pairsToProcess != 0
+        var pairBegin, pairEnd = pairsToProcess.pop()
+        var start, stop = 0, #section - 1
+
+        for ;;
+            if start > stop
+                mappedRanges.add((pairBegin, pairEnd - pairBegin + 1))
+                break
+            end
+
+            var mid = std.int((start + stop) / 2)
+            var dest, source, len = section[mid]
+
+            if pairEnd < source
+                stop = mid - 1
+            elif pairBegin > source + len - 1
+                start = mid + 1
+            else
+                if pairBegin < source
+                    pairsToProcess.add((pairBegin, source - 1))
+                    pairBegin = source
+                end
+
+                if pairEnd > source + len - 1
+                    pairsToProcess.add((source + len, pairEnd))
+                    pairEnd = source + len - 1
+                end
+
+                mappedRanges.add((pairBegin - source + dest, pairEnd - pairBegin + 1))
+                break
+            end
+        end
+    end
+
+    return mappedRanges
+end
+
+fun solve(seedRanges, almanac)
+    var prevRanges, currRanges = List(seedRanges), []
+
+    for var section in almanac
+        var toCurrSection = std.partial(mapToNextSection, section)
+        currRanges.addAll(prevRanges.map(toCurrSection).flatten())
+
+        prevRanges, currRanges = currRanges, prevRanges
+        currRanges.clear()
+    end
+
+    return prevRanges.map(|range| => range[0]).min()
+end
+
+fun pairs(iter)
+    var seq = Tuple(iter)
+    for var i = 0; i < #seq; i += 2
+        yield (seq[i], seq[i + 1])
+    end
+end
+
+fun part1(seeds, almanac)
+    return solve(seeds.interleave(1).concat((1,)).collect(pairs), almanac) 
+end
+
+fun part2(seeds, almanac)
+    return solve(seeds.collect(pairs), almanac) 
+end
+
+with io.File(argv[0], "r") f
+    var seeds = f.readLine().strip().split(": ")[1].split(" ").map(std.int).collect(Tuple)
+    var almanac = parseAlmanac(f)
+    print("Part 1:", part1(seeds, almanac))
+    print("Part 2:", part2(seeds, almanac))
+end

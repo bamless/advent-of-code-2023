@@ -1,0 +1,69 @@
+#!/usr/bin/env jstar
+
+import io
+
+var offsets = Tuple([
+    (-1, -1),
+    (0,  -1),
+    (1,  -1),
+    (-1,  0),
+    (1,   0),
+    (-1,  1),
+    (0,   1),
+    (1,   1),
+])
+
+fun toNum(c)
+    var num = std.char(c) - 0x30
+    return num if num >= 0 and num <= 9 else null
+end
+
+fun findAdjacentSymbol(engine, width, height, x, y)
+    for var dx, dy in offsets
+        var xx, yy = x + dx, y + dy
+        if yy >= 0 and yy < height and xx >= 0 and xx < width
+            var adj = engine[yy][xx]
+            if adj != '.' and !toNum(adj)
+                return true
+            end
+        end
+    end
+    return false
+end
+
+fun computePartNumbers(line, idx, engine)
+    var partNums = [] 
+    var width, height = #engine[0], #engine
+
+    var partNum, foundSym = 0, false
+    for var x, c in line.enumerate()
+        var digit = toNum(c) 
+        var partEnd = x == width - 1 or !digit
+
+        if digit
+            partNum = partNum * 10 + digit
+            foundSym = foundSym or findAdjacentSymbol(engine, width, height, x, idx)
+        end
+
+        if partEnd
+            if foundSym
+                partNums.add(partNum)
+            end
+            partNum, foundSym = 0, false
+        end
+    end
+
+    return partNums
+end
+
+with io.File(argv[0], "r") f
+    var engine = f.map(|line| => line.strip().collect(Tuple)).collect(Tuple)
+
+    var res = 0
+    for var idx, line in engine.enumerate()
+        var partNums = computePartNumbers(line, idx, engine)
+        res += partNums.sum()
+    end
+    
+    print(res)
+end

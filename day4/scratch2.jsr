@@ -1,0 +1,51 @@
+#!/usr/bin/env jstar
+
+import io
+import re
+
+fun interesct(s1, s2)
+    return s1.filter(|k| => s2.contains(k)).collect(Tuple)
+end
+
+fun computeWonCards(cards)
+    var table = List(#cards, fun(cardNum)
+        var win, nums = cards[cardNum]
+        return [cardNum, #interesct(win, nums), 1]
+    end)
+
+    var totalCards = 0
+    for var i = 0; i < #table; i += 1
+        var cardNum, won, amount = table[i]
+
+        for var j = cardNum + 1; j <= cardNum + won; j += 1
+            // read as: table[j].amount += amount
+            table[j][2] += amount
+        end
+
+        totalCards += amount
+    end
+
+    return totalCards
+end
+
+with io.File(argv[0], "r") f
+    var cards = []
+    for var line in f
+        var winStr, numStr = line.split(':')[1].strip().split(' | ')
+
+        var win = re.lazyMatchAll(winStr, "(%d+)").
+            map(std.int).
+            map(|n| => (n, true)).
+            collect(Table)
+
+        var nums = re.lazyMatchAll(numStr, "(%d+)").
+            map(std.int).
+            map(|n| => (n, true)).
+            collect(Table)
+
+        cards.add((win, nums))
+    end
+
+    var res = computeWonCards(cards)
+    print(res)
+end

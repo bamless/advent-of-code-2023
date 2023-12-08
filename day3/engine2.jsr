@@ -1,0 +1,88 @@
+#!/usr/bin/env jstar
+
+import io
+
+var offsets = Tuple([
+    (-1, -1),
+    (0,  -1),
+    (1,  -1),
+    (-1,  0),
+    (1,   0),
+    (-1,  1),
+    (0,   1),
+    (1,   1),
+])
+
+fun toNum(c)
+    var num = std.char(c) - 0x30
+    return num if num >= 0 and num <= 9 else null
+end
+
+fun findAdjacentSymbol(engine, width, height, x, y)
+    for var dx, dy in offsets
+        var xx, yy = x + dx, y + dy
+        if yy >= 0 and yy < height and xx >= 0 and xx < width
+            var adj = engine[yy][xx]
+            if adj != '.' and !toNum(adj)
+                return adj, xx, yy
+            end
+        end
+    end
+    return null, null, null
+end
+
+fun computeGears(line, idx, engine)
+    var lineGears = {}
+    var width, height = #engine[0], #engine
+
+    var partNum, partGears = 0, {}
+    for var x, c in line.enumerate()
+        var digit = toNum(c) 
+        var partEnd = x == width - 1 or !digit
+
+        if digit
+            partNum = partNum * 10 + digit
+            var sym, xx, yy = findAdjacentSymbol(engine, width, height, x, idx)
+            if sym == '*'
+                partGears[(xx, yy)] = true
+            end
+        end
+
+        if partEnd
+            for var gear in partGears 
+                if !lineGears[gear]
+                    lineGears[gear] = [partNum]
+                else
+                    lineGears[gear].add(partNum)
+                end
+            end
+            partNum, partGears = 0, {}
+        end
+    end
+
+    return lineGears
+end
+
+with io.File(argv[0], "r") f
+    var engine = f.map(|line| => line.strip().collect(Tuple)).collect(Tuple)
+
+    var gears = {}
+    for var idx, line in engine.enumerate()
+        var lineGears = computeGears(line, idx, engine)
+        for var gear in lineGears
+            if !gears[gear]
+                gears[gear] = lineGears[gear]
+            else
+                gears[gear].addAll(lineGears[gear])
+            end
+        end
+    end
+
+    var res = gears.
+        filter(|pos| => #gears[pos] == 2).
+        map(|pos| => gears[pos][0] * gears[pos][1]).
+        sum()
+        
+    print(res)
+    
+end
