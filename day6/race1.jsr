@@ -1,0 +1,37 @@
+#!/usr/bin/env jstar
+
+import io
+import re
+import math
+
+fun waysToWin(time, record)
+    var disc = math.sqrt(time^2 - 4 * (record + 0.01))
+    return math.floor((time + disc) / 2) - math.ceil((time - disc) / 2) + 1
+end
+
+fun part1(times, records)
+    return times.
+        zip(records).
+        map(|race| => waysToWin(...race)).
+        reduce(1, |a, b| => a * b)
+end
+
+fun part2(times, records)
+    return waysToWin(Number(times.join()), Number(records.join()))
+end
+
+with io.File(argv[0], "r") f
+    var timesStr = f.readLine() 
+    var recordsStr = f.readLine()
+
+    var times = re.lazyMatchAll(timesStr, "(%d+)").
+        map(std.int).
+        collect(Tuple)
+
+    var records = re.lazyMatchAll(recordsStr, "(%d+)").
+        map(std.int).
+        collect(Tuple)
+
+    print("Part 1", part1(times, records))
+    print("Part 2", part2(times, records))
+end
