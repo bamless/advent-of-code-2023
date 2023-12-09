@@ -1,0 +1,101 @@
+#!/usr/bin/env jstar
+
+import io
+
+var TYPES = {
+    (5,)           : 7,
+    (4, 1)         : 6,
+    (3, 2)         : 5,
+    (3, 1, 1)      : 4,
+    (2, 2, 1)      : 3,
+    (2, 1, 1, 1)   : 2,
+    (1, 1, 1, 1, 1): 1,
+}
+
+var STRENGTH_PART1 = { 'A': 14, 'K': 13, 'Q': 12, 'J': 11, 'T': 10 }
+var STRENGTH_PART2 = { 'A': 13, 'K': 12, 'Q': 11, 'T': 10, 'J': 1 }
+
+fun cardStrength(card, strengths)
+    return strengths[card] or (std.char(card) - 0x30)
+end
+
+fun compareStrength(h1, h2, strengths)
+    for var c1, c2 in h1.zip(h2)
+        var s1, s2 = cardStrength(c1, strengths), cardStrength(c2, strengths)
+        if s1 != s2
+            return s1 - s2
+        end
+    end
+    return 0
+end
+
+fun getUniq(hand)
+    var uniq = {}
+    for var card in hand
+        if uniq[card]
+            uniq[card] += 1
+        else
+            uniq[card] = 1
+        end
+    end
+    return uniq
+end
+
+fun computeTypePart2(hand) 
+    var uniq = getUniq(hand)
+
+    var joker = uniq['J'] or 0
+    var type = uniq.
+        filter(|k| => k != 'J').
+        map(|k| => uniq[k]).
+        sorted(|a, b| => b - a).
+        collect(Tuple)
+    
+    if type.empty()
+        type = (5,)
+    else
+        type = (type[0] + joker, ...type.skip(1))
+    end
+
+    return TYPES[type]
+end
+
+fun computeTypePart1(hand) 
+    var uniq = getUniq(hand)
+    return TYPES[Tuple(uniq.values().sorted(|a, b| => b - a))]
+end
+
+fun solve(games, comparator)
+    return games.
+        sorted(comparator).
+        enumerate().
+        map(fun(idxGame)
+            var idx, game = idxGame
+            return (idx + 1) * game[1]
+        end).
+        sum()
+end
+
+fun part1(games)
+    return solve(games, fun(game1, game2)
+        var cmp = computeTypePart1(game1[0]) - computeTypePart1(game2[0])
+        return cmp if cmp != 0 else compareStrength(game1[0], game2[0], STRENGTH_PART1)
+    end)
+end
+
+fun part2(games)
+    return solve(games, fun(game1, game2)
+        var cmp = computeTypePart2(game1[0]) - computeTypePart2(game2[0])
+        return cmp if cmp != 0 else compareStrength(game1[0], game2[0], STRENGTH_PART2)
+    end)
+end
+
+with io.File(argv[0], "r") f
+    var games = f.
+        map(|line| => line.strip().split(" ")).
+        map(|round| => (round[0], std.int(round[1]))).
+        collect(Tuple)
+
+    print("Part 1:", part1(games))
+    print("Part 2:", part2(games))
+end
