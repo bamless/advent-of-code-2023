@@ -1,0 +1,77 @@
+#!/usr/bin/env jstar
+
+import io
+import re
+
+class Node
+    construct(label)
+        this.label = label
+        this.left, this.right = null, null
+    end
+end
+
+fun parseNetwork(f)
+    f.readLine() 
+
+    var network = f.
+        map(|line| => re.match(line, "(.+) = %((.+), (.+)%)")).
+        collect(Tuple)
+    
+    var nodes = network.map(fun(args)
+            var label, = args
+            return (label, Node(label))
+        end).
+        collect(Table)
+
+    for var label, left, right in network
+        var node = nodes[label]
+        node.left = nodes[left]
+        node.right = nodes[right]
+    end
+
+    return nodes
+end
+
+fun gcd(x, y)
+    while y != 0
+        x, y = y, x % y
+    end
+    return x
+end
+
+fun lcm(x, y)
+    return x * y / gcd(x, y)
+end
+
+fun walk(node, moves, move=0, step=0)
+    if node.label.endsWith("Z")
+        return step
+    end
+
+    if moves[move] == "L"
+        return walk(node.left, moves, (move + 1) % #moves, step + 1)
+    else
+        return walk(node.right, moves, (move + 1) % #moves, step + 1)
+    end
+end
+
+fun part1(nodes, moves)
+    if nodes["AAA"]
+        return walk(nodes["AAA"], moves)
+    end
+end
+
+fun part2(nodes, moves)
+    return nodes.
+        filter(|label| => label.endsWith("A")).
+        map(|label| => nodes[label]).
+        map(|n| => walk(n, moves)).
+        reduce(1, |a, b| => lcm(a, b))
+end
+
+with io.File(argv[0], "r") f
+    var moves = f.readLine().strip()
+    var nodes = parseNetwork(f)
+    print("Part 1:", part1(nodes, moves))
+    print("Part 2:", part2(nodes, moves))
+end
