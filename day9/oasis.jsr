@@ -1,0 +1,29 @@
+#!/usr/bin/env jstar
+
+import io
+
+var FILTER = (-1, 1)
+
+fun convolve(vals, filter)
+    return iter.range(#vals - #filter + 1).
+        map(|i| => iter.range(#filter).map(|j| => vals[i + j] * filter[j]).sum()).
+        collect(Tuple)
+end
+
+fun predict(reading)
+    if reading.all(|e| => e == 0)
+        return 0, 0
+    end
+    var p1, p2 = predict(convolve(reading, FILTER))
+    return reading[0] - p1, p2 + reading[#reading - 1]
+end
+
+with io.File(argv[0], "r") f
+    var readings = f.
+        map(|line| => line.strip().split(" ").map(std.int).collect(Tuple)).
+        collect(Tuple)
+    
+    var predictions = readings.map(predict).collect(Tuple)
+    print("Part 1:", predictions.map(|p| => p[1]).sum())
+    print("Part 2:", predictions.map(|p| => p[0]).sum())
+end
