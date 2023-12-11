@@ -1,0 +1,94 @@
+#!/usr/bin/env jstar
+
+import io
+import math
+
+fun isColumnEmpty(graph, col)
+    return graph.map(|row| => row[col]).all(|e| => e == ".")
+end
+
+fun isRowEmpty(graph, row)
+    return graph[row].all(|e| => e == ".")
+end
+
+fun computeExpansionFactors(graph, factor)
+    var expansionX = List(#graph[0])
+    for var x = 0; x < #graph[0]; x += 1
+        expansionX[x] = 1 if !isColumnEmpty(graph, x) else factor
+    end
+
+    var expansionY = List(#graph)
+    for var y = 0; y < #graph; y += 1
+        expansionY[y] = 1 if !isRowEmpty(graph, y) else factor
+    end
+    
+    return expansionX, expansionY
+end
+
+fun rasterize(x1, y1, x2, y2, expansionX, expansionY)
+    var distx = math.abs(x2 - x1)
+    var disty = -math.abs(y2 - y1)
+    var dx = 1 if x1 < x2 else -1
+    var dy = 1 if y1 < y2 else -1
+    var err = distx + disty;
+
+    var steps = 0
+    while x1 != x2 or y1 != y2
+        if err * 2 - disty > distx - err * 2
+            err += disty
+            x1 += dx
+            steps += expansionX[x1]
+        else
+            err += distx;
+            y1 += dy;
+            steps += expansionY[y1]
+        end
+    end
+
+    return steps
+end
+
+fun getGalaxies(graph)
+    var galaxies = []
+    for var y = 0; y < #graph; y += 1
+        for var x = 0; x < #graph[0]; x += 1
+            if graph[y][x] == "#"
+                galaxies.add((x, y))
+            end
+        end
+    end
+    return galaxies
+end
+
+fun solve(graph, expansionX, expansionY)
+    var seen = {}
+    var galaxies = getGalaxies(graph)
+
+    var sum = 0
+    for var g1 in galaxies
+        for var g2 in galaxies
+            if !seen[(g1, g2)] and !seen[(g2, g1)]
+                var x0, y0 = g1
+                var x1, y1 = g2
+                sum += rasterize(x0, y0, x1, y1, expansionX, expansionY)
+                seen[(g1, g2)] = seen[(g2, g1)] = true
+            end
+        end
+    end
+
+    return sum
+end
+
+fun part1(graph)
+    return solve(graph, ...computeExpansionFactors(graph, 2)) 
+end
+
+fun part2(graph)
+    return solve(graph, ...computeExpansionFactors(graph, 10^6)) 
+end
+
+with io.File(argv[0], "r") f
+    var graph = f.map(|line| => line.strip().collect(List)).collect(List)
+    print("Part 1", part1(graph))
+    print("Part 1", part2(graph))
+end
