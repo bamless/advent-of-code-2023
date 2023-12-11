@@ -120,7 +120,7 @@ fun findLoop(map)
     while #stack != 0
         var x, y = stack.pop()
         for var neighbor in getNeighbors(map, x, y)
-            if startX == neighbor[0] and startY == neighbor[1] and #seen > 4
+            if startX == neighbor[0] and startY == neighbor[1] and #seen >= 4
                 return path
             end
 
