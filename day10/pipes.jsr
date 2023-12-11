@@ -3,7 +3,7 @@
 import io
 import math
 
-var CONNECTIONS = {
+var TILES = {
     "|": [
         {
             "off": (0, 1), 
@@ -31,7 +31,7 @@ var CONNECTIONS = {
         },
         {
             "off": (0, 1),
-            "allowed": "|FL",
+            "allowed": "|JL",
         }
     ],
     "L": [
@@ -68,8 +68,8 @@ var CONNECTIONS = {
 
 fun getNeighbors(map, x, y)
     var tile = map[y][x]
-    return CONNECTIONS[tile].
-        map(|c| => c['off']).
+    return TILES[tile].
+        map(|t| => t['off']).
         map(|off| => (x + off[0], y + off[1])).
         collect(Tuple)
 end
@@ -91,13 +91,13 @@ end
 
 fun findFittingPipe(map, startX, startY)
     var width, height = #map[0], #map
-    for var pipe in CONNECTIONS
-        var c1, c2 = CONNECTIONS[pipe]
-        var x1, y1 = startX + c1['off'][0], startY + c1['off'][1]
-        var x2, y2 = startX + c2['off'][0], startY + c2['off'][1]
+    for var pipe in TILES
+        var t1, t2 = TILES[pipe]
+        var x1, y1 = startX + t1['off'][0], startY + t1['off'][1]
+        var x2, y2 = startX + t2['off'][0], startY + t2['off'][1]
         
-        if inBounds(map, x1, y1) and c1['allowed'].contains(map[y1][x1]) and
-           inBounds(map, x2, y2) and c2['allowed'].contains(map[y2][x2])
+        if inBounds(map, x1, y1) and t1['allowed'].contains(map[y1][x1]) and
+           inBounds(map, x2, y2) and t2['allowed'].contains(map[y2][x2])
             return pipe
         end 
     end
@@ -111,7 +111,7 @@ fun findLoop(map)
     var start = (startX, startY)
 
     // Pick a consistent direction on first move
-    var dx, dy = CONNECTIONS[fittingPipe][0]['off']
+    var dx, dy = TILES[fittingPipe][0]['off']
     var first = startX + dx, startY + dy
 
     var stack = [first]
