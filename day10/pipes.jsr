@@ -70,8 +70,7 @@ fun getNeighbors(map, x, y)
     var tile = map[y][x]
     return TILES[tile].
         map(|t| => t['off']).
-        map(|off| => (x + off[0], y + off[1])).
-        collect(Tuple)
+        map(|off| => (x + off[0], y + off[1]))
 end
 
 fun findStart(map)
