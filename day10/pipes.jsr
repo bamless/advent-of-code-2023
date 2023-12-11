@@ -1,0 +1,158 @@
+#!/usr/bin/env jstar
+
+import io
+import math
+
+var CONNECTIONS = {
+    "|": [
+        {
+            "off": (0, 1), 
+            "allowed": "|LJ"
+        },
+        {
+            "off": (0, -1),
+            "allowed": "|7F",
+        }
+    ], 
+    "-": [
+        {
+            "off": (-1, 0), 
+            "allowed": "-FL"
+        },
+        {
+            "off": (1, 0),
+            "allowed": "-7J",
+        }
+    ],
+    "F": [
+        {
+            "off": (1, 0), 
+            "allowed": "-7J"
+        },
+        {
+            "off": (0, 1),
+            "allowed": "|FL",
+        }
+    ],
+    "L": [
+        {
+            "off": (1, 0), 
+            "allowed": "-7J"
+        },
+        {
+            "off": (0, -1),
+            "allowed": "|7F",
+        }
+    ],
+    "7": [
+        {
+            "off": (-1, 0), 
+            "allowed": "-FL"
+        },
+        {
+            "off": (0, 1),
+            "allowed": "|LJ",
+        }
+    ],
+    "J": [
+        {
+            "off": (-1, 0), 
+            "allowed": "-LF"
+        },
+        {
+            "off": (0, -1),
+            "allowed": "|7F",
+        }
+    ],
+}
+
+fun getNeighbors(map, x, y)
+    var tile = map[y][x]
+    return CONNECTIONS[tile].
+        map(|c| => c['off']).
+        map(|off| => (x + off[0], y + off[1])).
+        collect(Tuple)
+end
+
+fun findStart(map)
+    for var y, line in map.enumerate()
+        for var x, col in line.enumerate()
+            if map[y][x] == 'S'
+                return x, y
+            end
+        end
+    end
+end
+
+fun inBounds(map, x, y)
+    var width, height = #map[0], #map
+    return x >= 0 and x < width and y >= 0 and y < width
+end
+
+fun findFittingPipe(map, startX, startY)
+    var width, height = #map[0], #map
+    for var pipe in CONNECTIONS
+        var c1, c2 = CONNECTIONS[pipe]
+        var x1, y1 = startX + c1['off'][0], startY + c1['off'][1]
+        var x2, y2 = startX + c2['off'][0], startY + c2['off'][1]
+        
+        if inBounds(map, x1, y1) and c1['allowed'].contains(map[y1][x1]) and
+           inBounds(map, x2, y2) and c2['allowed'].contains(map[y2][x2])
+            return pipe
+        end 
+    end
+end
+
+fun findLoop(map)
+    var startX, startY = findStart(map)
+    var fittingPipe = findFittingPipe(map, startX, startY)
+    map[startY][startX] = fittingPipe
+
+    var start = (startX, startY)
+    // Pick a consistent direction on first move
+    var dx, dy = CONNECTIONS[fittingPipe][0]['off']
+    var first = startX + dx, startY + dy
+
+    var stack = [first]
+    var path = [start, first]
+    var seen = {start : true, first : true}
+
+    while #stack != 0
+        var x, y = stack.pop()
+        for var neighbor in getNeighbors(map, x, y)
+            if startX == neighbor[0] and startY == neighbor[1] and #seen > 4
+                return path
+            end
+
+            if !seen[neighbor]
+                seen[neighbor] = true
+                path.add(neighbor)
+                stack.add(neighbor)
+            end
+        end
+    end
+
+    return null
+end
+
+fun area(map, path)
+    var vertices = path.
+        filter(|pos| => "LF7J".contains(map[pos[1]][pos[0]])).
+        collect(Tuple)
+    
+    var m1 = vertices.map(|v| => v[0]).concat((vertices[0][0],)).collect(Tuple)
+    var m2 = vertices.map(|v| => v[1]).concat((vertices[0][1],)).collect(Tuple)
+
+    var s1 = m1.zip(m2.skip(1)).map(|m| => m[0] * m[1]).sum()
+    var s2 = m1.skip(1).zip(m2).map(|m| => m[0] * m[1]).sum()
+
+    return (math.abs(s1 - s2) - #path) / 2 + 1
+end
+
+with io.File(argv[0], "r") f
+    var map = f.map(|line| => line.strip().collect(List)).collect(List)
+
+    var loop = findLoop(map)
+    print("Part 1:", #loop / 2)
+    print("Part 2:", area(map, loop))
+end
