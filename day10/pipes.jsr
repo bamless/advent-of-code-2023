@@ -109,6 +109,7 @@ fun findLoop(map)
     map[startY][startX] = fittingPipe
 
     var start = (startX, startY)
+
     // Pick a consistent direction on first move
     var dx, dy = CONNECTIONS[fittingPipe][0]['off']
     var first = startX + dx, startY + dy
