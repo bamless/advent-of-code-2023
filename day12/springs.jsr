@@ -1,0 +1,83 @@
+#!/usr/bin/env jstar
+
+import io
+import re
+
+fun memoize(countFn)
+    var mem = {}
+    return fun(springs, group, size=0)
+        var key = (springs, group, size)
+        if !mem[key]
+            var res = countFn(springs, group, size)
+            mem[key] = res
+            return res
+        else
+            return mem[key]
+        end
+    end
+end
+
+@memoize
+fun count(springs, groups, size=0)
+    if #springs == 0
+        if #groups == 0 and size == 0 or
+           #groups == 1 and groups[0] == size
+            return 1
+        else
+            return 0
+        end
+    end
+
+    if #groups > 0 and size > groups[0] or #groups == 0 and size > 0
+        return 0
+    end
+
+    var spring = springs[0]
+
+    var c1 = 0
+    if spring == "#" or spring == "?"
+        c1 = count(springs[1, #springs], groups, size + 1) 
+    end
+
+    var c2 = 0
+    if spring == "." or spring == "?"
+        if #groups > 0 and size == groups[0]
+            c2 = count(springs[1, #springs], groups[1, #groups], 0)
+        elif size == 0
+            c2 = count(springs[1, #springs], groups, 0)
+        end
+    end
+
+    return c1 + c2
+end
+
+fun countPossible(record)
+    var springs, groups = record
+    return count(springs, groups, 0)
+end
+
+fun part1(records)
+    return records.map(countPossible).sum()
+end
+
+fun part2(records)
+    var expanded = records.
+        map(fun(record)
+            var springs = iter.repeat(record[0]).take(5).interleave("?").flatten().join()
+            var groups = record[1].repeat(5).collect(Tuple)
+            return springs, groups
+        end).
+        collect(Tuple)
+    
+    return expanded.map(countPossible).sum()
+end
+
+with io.File(argv[0], "r") f
+    var records = f.
+        map(|line| => line.strip().split(" ")).
+        map(|rec| => (rec[0].strip(), rec[1].split(",").map(std.int).collect(Tuple))).
+        collect(Tuple)
+
+    print("Part 1:", part1(records))
+    print("Part 2:", part2(records))
+end
