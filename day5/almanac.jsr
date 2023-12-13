@@ -84,19 +84,12 @@ fun solve(seedRanges, almanac)
     return prevRanges.map(|range| => range[0]).min()
 end
 
-fun pairs(iter)
-    var seq = Tuple(iter)
-    for var i = 0; i < #seq; i += 2
-        yield (seq[i], seq[i + 1])
-    end
-end
-
 fun part1(seeds, almanac)
-    return solve(seeds.interleave(1).concat((1,)).collect(pairs), almanac) 
+    return solve(seeds.interleave(1).concat(iter.once(1)).chunks(2), almanac) 
 end
 
 fun part2(seeds, almanac)
-    return solve(seeds.collect(pairs), almanac) 
+    return solve(seeds.chunks(2), almanac) 
 end
 
 with io.File(argv[0], "r") f
