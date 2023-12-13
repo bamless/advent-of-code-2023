@@ -1,0 +1,92 @@
+#!/usr/bin/env jstar
+
+import io
+
+fun transpose(pattern)
+    var width, height = #pattern[0], #pattern
+    var trans = List(width, |_| => List(height))
+    for var x = 0; x < width; x += 1
+        for var y = 0; y < height; y += 1
+            trans[x][y] = pattern[y][x]
+        end
+    end
+    return trans.map(|row| => row.join()).collect(Tuple)
+end
+
+fun distance(row1, row2)
+    return row1.zip(row2).filter(|args| => args[0] != args[1]).count()
+end
+
+fun reflection(pattern)
+    for var row = 0; row < #pattern - 1; row += 1
+        if pattern[row] == pattern[row + 1]
+            var l, r = row - 1, row + 2
+
+            while l >= 0 and r <= #pattern - 1
+                if pattern[l] != pattern[r]
+                    break
+                end
+                l -= 1
+                r += 1
+            end
+
+            if l < 0 or r > #pattern - 1
+                return row + 1
+            end
+        end
+    end
+    return 0
+end
+
+fun smudgedReflection(pattern)
+    for var i = 0; i < #pattern - 1; i += 1
+        var dist = distance(pattern[i], pattern[i + 1])
+
+        if dist <= 1
+            var smudgeFound = dist == 1
+            var l, r = i - 1, i + 2
+
+            while l >= 0 and r <= #pattern - 1
+                var dist = distance(pattern[l], pattern[r])
+                if smudgeFound and dist != 0 or dist > 1
+                    break
+                end
+
+                if dist == 1
+                    smudgeFound = true
+                end
+
+                l -= 1
+                r += 1
+            end
+
+            if smudgeFound and (l < 0 or r > #pattern - 1)
+                return i + 1
+            end
+        end
+    end
+    return 0
+end
+
+fun part1(patterns)
+    return patterns.
+        map(|pat| => 100 * reflection(pat) + reflection(transpose(pat))).
+        sum()
+end
+
+fun part2(patterns)
+    return patterns.
+        map(|pat| => 100 * smudgedReflection(pat) + smudgedReflection(transpose(pat))).
+        sum()
+end
+
+with io.File(argv[0], "r") f
+    var patterns = f.
+        readAll().
+        split("\n\n").
+        map(|p| => p.strip().split("\n")).
+        collect(Tuple)
+
+    print("Part 1:", part1(patterns))
+    print("Part 2:", part2(patterns))
+end
