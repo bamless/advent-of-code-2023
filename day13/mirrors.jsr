@@ -2,15 +2,10 @@
 
 import io
 
-fun transpose(pattern)
-    var width, height = #pattern[0], #pattern
-    var trans = List(width, |_| => List(height))
-    for var x = 0; x < width; x += 1
-        for var y = 0; y < height; y += 1
-            trans[x][y] = pattern[y][x]
-        end
-    end
-    return trans.map(|row| => row.join()).collect(Tuple)
+fun transpose(pat)
+    return iter.range(#pat[0]).
+        map(|i| => iter.range(#pat).map(|j| => pat[j][i]).join()).
+        collect(Tuple)
 end
 
 fun distance(row1, row2)
