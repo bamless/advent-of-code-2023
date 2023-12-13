@@ -39,12 +39,12 @@ fun reflection(pattern)
 end
 
 fun smudgedReflection(pattern)
-    for var i = 0; i < #pattern - 1; i += 1
-        var dist = distance(pattern[i], pattern[i + 1])
+    for var row = 0; row < #pattern - 1; row += 1
+        var dist = distance(pattern[row], pattern[row + 1])
 
         if dist <= 1
             var smudgeFound = dist == 1
-            var l, r = i - 1, i + 2
+            var l, r = row - 1, row + 2
 
             while l >= 0 and r <= #pattern - 1
                 var dist = distance(pattern[l], pattern[r])
@@ -61,7 +61,7 @@ fun smudgedReflection(pattern)
             end
 
             if smudgeFound and (l < 0 or r > #pattern - 1)
-                return i + 1
+                return row + 1
             end
         end
     end
