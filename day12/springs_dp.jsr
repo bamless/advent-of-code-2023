@@ -1,0 +1,76 @@
+#!/usr/bin/env jstar
+
+import io
+import re
+
+fun isGroupPossible(group, springs)
+    if #springs <= group
+        return false
+    end
+
+    var spring = springs[group]
+    if spring == "#"
+        return false
+    end
+
+    return springs[0, group].all(|c| => c == "?" or c == "#")
+end
+
+fun count(springs, groups)
+    var table = List(#springs + 1, |_| => List(#groups, 0))
+
+    for var i = #springs - 1; i >= 0; i -= 1
+        var spring = springs[i]
+        if spring != "." and spring != "?"
+            break
+        end
+        table[i + 1][0] = 1
+    end
+
+    for var g = 1; g < #groups; g += 1 
+        for var s = #springs - 2; s >= 0; s -= 1
+            var spring, group = springs[s], groups[g]
+            if spring == "." or spring == "?"
+                table[s][g] += table[s + 1][g]
+            end
+            if (spring == "#" or spring == "?") and
+               isGroupPossible(group, springs[s, #springs])
+                table[s][g] += table[s + groups[g] + 1][g - 1]
+            end
+        end
+    end
+
+    return table[0][#groups - 1]
+end
+
+fun countPossible(record)
+    var springs, groups = record
+    return count(springs + ".", (0,) + groups.reversed().collect(Tuple))
+end
+
+fun part1(records)
+    return records.map(countPossible).sum()
+end
+
+fun part2(records)
+    var expanded = records.
+        map(fun(record)
+            var springs = iter.repeat(record[0]).take(5).interleave("?").flatten().join()
+            var groups = record[1].repeat(5).collect(Tuple)
+            return springs, groups
+        end).
+        collect(Tuple)
+    
+    return expanded.map(countPossible).sum()
+end
+
+with io.File(argv[0], "r") f
+    var records = f.
+        map(|line| => line.strip().split(" ")).
+        map(|rec| => (rec[0].strip(), rec[1].split(",").map(std.int).collect(Tuple))).
+        collect(Tuple)
+
+    print("Part 1:", part1(records))
+    print("Part 2:", part2(records))
+end
+
