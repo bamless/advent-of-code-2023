@@ -17,50 +17,28 @@ fun distance(row1, row2)
     return row1.zip(row2).filter(|args| => args[0] != args[1]).count()
 end
 
-fun reflection(pattern)
-    for var row = 0; row < #pattern - 1; row += 1
-        if pattern[row] == pattern[row + 1]
-            var l, r = row - 1, row + 2
-
-            while l >= 0 and r <= #pattern - 1
-                if pattern[l] != pattern[r]
-                    break
-                end
-                l -= 1
-                r += 1
-            end
-
-            if l < 0 or r > #pattern - 1
-                return row + 1
-            end
-        end
-    end
-    return 0
-end
-
-fun smudgedReflection(pattern)
+fun reflection(pattern, maxSmudges=0)
     for var row = 0; row < #pattern - 1; row += 1
         var dist = distance(pattern[row], pattern[row + 1])
 
-        if dist <= 1
-            var smudgeFound = dist == 1
+        if dist <= maxSmudges
+            var smudges = dist
             var l, r = row - 1, row + 2
 
             while l >= 0 and r <= #pattern - 1
+                var remainingSmudges = maxSmudges - smudges
                 var dist = distance(pattern[l], pattern[r])
-                if smudgeFound and dist != 0 or dist > 1
+
+                if dist > remainingSmudges
                     break
                 end
 
-                if dist == 1
-                    smudgeFound = true
-                end
-
+                smudges += dist
                 l -= 1
                 r += 1
             end
 
-            if smudgeFound and (l < 0 or r > #pattern - 1)
+            if smudges == maxSmudges and (l < 0 or r > #pattern - 1)
                 return row + 1
             end
         end
@@ -76,7 +54,7 @@ end
 
 fun part2(patterns)
     return patterns.
-        map(|pat| => 100 * smudgedReflection(pat) + smudgedReflection(transpose(pat))).
+        map(|pat| => 100 * reflection(pat, 1) + reflection(transpose(pat), 1)).
         sum()
 end
 
