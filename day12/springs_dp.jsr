@@ -1,7 +1,6 @@
 #!/usr/bin/env jstar
 
 import io
-import re
 
 fun isGroupPossible(group, springs)
     if #springs <= group
