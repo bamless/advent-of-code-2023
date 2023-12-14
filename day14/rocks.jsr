@@ -82,8 +82,8 @@ fun part2(rocks)
     end
 
     var len = i - seen[rocks]
-    var off = i - len
-    var idx = (CYCLES - off) % len + off
+    var start = i - len
+    var idx = (CYCLES - start) % len + start
     return totalLoad(seen.find(|k| => seen[k] == idx))
 end
 
