@@ -1,0 +1,97 @@
+#!/usr/bin/env jstar
+
+import io
+
+var UP, DOWN, LEFT, RIGHT = (0, -1), (0, 1), (-1, 0), (1, 0)
+
+var DIR_BOUNDS = {
+    (0, -1): |rocks, x, y| => y > 0,
+    (0,  1): |rocks, x, y| => y < #rocks - 1,
+    (-1, 0): |rocks, x, y| => x > 0,
+    (1,  0): |rocks, x, y| => x < #rocks[0] - 1,
+}
+
+fun isSame(rocks1, rocks2)
+    return #rocks1 == #rocks2 and
+        #rocks1[0] == #rocks2[0] and
+        !rocks1.zip(rocks2).map(|rocks| => rocks[0] != rocks[1]).any()
+end
+
+fun slide(rocks, dir)
+    var slid = List(#rocks, |i| => List(rocks[i]))
+    
+    var rangex, rangey
+    if dir[0] != 0
+        rangex = (iter.range(1, #rocks[0]) if dir[0] < 0 else iter.range(#rocks[0] - 2, -1, -1)).collect(Tuple)
+        rangey = iter.range(0, #rocks).collect(Tuple)
+    else
+        rangey = (iter.range(1, #rocks) if dir[1] < 0 else iter.range(#rocks - 2, -1, -1)).collect(Tuple)
+        rangex = iter.range(0, #rocks[0]).collect(Tuple)
+    end
+
+    var inBounds = DIR_BOUNDS[dir]
+
+    for var y in rangey
+        for var x in rangex
+            if rocks[y][x] != "O"
+                continue
+            end
+
+            var dx, dy = dir
+            var i, j = x, y
+            while inBounds(rocks, i, j)
+                var ii, jj = i + dx, j + dy
+                if slid[jj][ii] != "."
+                    break
+                end
+                i += dx
+                j += dy
+            end
+            
+            slid[y][x] = "."
+            slid[j][i] = "O"
+        end
+    end
+
+    return slid
+end
+
+fun totalLoad(rocks)
+    return rocks.enumerate().map(fun(args) 
+        var y, row = args
+        return (#rocks - y) * row.filter(|c| => c == "O").count()
+    end).sum()
+end
+
+fun part1(rocks)
+    return totalLoad(slide(rocks, UP))
+end
+
+fun part2(rocks)
+    var CYCLES = 1000000000
+
+    var i, seen = 0, {}
+    while !seen[rocks]
+        seen[rocks] = i
+
+        for var dir in UP, LEFT, DOWN, RIGHT
+            rocks = slide(rocks, dir)
+        end
+
+        i += 1
+    end
+
+    var len = i - seen[rocks]
+    var off = i - len
+    var idx = (CYCLES - off) % len + off
+    return totalLoad(seen.find(|k| => seen[k] == idx))
+end
+
+with io.File(argv[0], "r") f
+    var rocks = f.
+        map(|line| => line.strip().collect(Tuple)).
+        collect(Tuple)
+
+    print("Part 1:", part1(rocks))
+    print("Part 2:", part2(rocks))
+end

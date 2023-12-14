@@ -2,63 +2,63 @@
 
 import io
 
-    fun transpose(pat)
-        return iter.range(#pat[0]).
-            map(|i| => iter.range(#pat).map(|j| => pat[j][i]).join()).
-            collect(Tuple)
-    end
+fun transpose(pat)
+    return iter.range(#pat[0]).
+        map(|i| => iter.range(#pat).map(|j| => pat[j][i]).join()).
+        collect(Tuple)
+end
 
-    fun distance(row1, row2)
-        return row1.zip(row2).filter(|args| => args[0] != args[1]).count()
-    end
+fun distance(row1, row2)
+    return row1.zip(row2).filter(|args| => args[0] != args[1]).count()
+end
 
-    fun reflection(pattern, maxSmudges=0)
-        for var row = 0; row < #pattern - 1; row += 1
-            var dist = distance(pattern[row], pattern[row + 1])
-            if dist <= maxSmudges
-                var smudges = dist
-                var l, r = row - 1, row + 2
+fun reflection(pattern, maxSmudges=0)
+    for var row = 0; row < #pattern - 1; row += 1
+        var dist = distance(pattern[row], pattern[row + 1])
+        if dist <= maxSmudges
+            var smudges = dist
+            var l, r = row - 1, row + 2
 
-                while l >= 0 and r <= #pattern - 1
-                    var remainingSmudges = maxSmudges - smudges
-                    var dist = distance(pattern[l], pattern[r])
+            while l >= 0 and r <= #pattern - 1
+                var remainingSmudges = maxSmudges - smudges
+                var dist = distance(pattern[l], pattern[r])
 
-                    if dist > remainingSmudges
-                        break
-                    end
-
-                    smudges += dist
-                    l -= 1
-                    r += 1
+                if dist > remainingSmudges
+                    break
                 end
 
-                if smudges == maxSmudges and (l < 0 or r > #pattern - 1)
-                    return row + 1
-                end
+                smudges += dist
+                l -= 1
+                r += 1
+            end
+
+            if smudges == maxSmudges and (l < 0 or r > #pattern - 1)
+                return row + 1
             end
         end
-        return 0
     end
+    return 0
+end
 
-    fun part1(patterns)
-        return patterns.
-            map(|pat| => 100 * reflection(pat) + reflection(transpose(pat))).
-            sum()
-    end
+fun part1(patterns)
+    return patterns.
+        map(|pat| => 100 * reflection(pat) + reflection(transpose(pat))).
+        sum()
+end
 
-    fun part2(patterns)
-        return patterns.
-            map(|pat| => 100 * reflection(pat, 1) + reflection(transpose(pat), 1)).
-            sum()
-    end
+fun part2(patterns)
+    return patterns.
+        map(|pat| => 100 * reflection(pat, 1) + reflection(transpose(pat), 1)).
+        sum()
+end
 
-    with io.File(argv[0], "r") f
-        var patterns = f.
-            readAll().
-            split("\n\n").
-            map(|p| => p.strip().split("\n")).
-            collect(Tuple)
+with io.File(argv[0], "r") f
+    var patterns = f.
+        readAll().
+        split("\n\n").
+        map(|p| => p.strip().split("\n")).
+        collect(Tuple)
 
-        print("Part 1:", part1(patterns))
-        print("Part 2:", part2(patterns))
-    end
+    print("Part 1:", part1(patterns))
+    print("Part 2:", part2(patterns))
+end
