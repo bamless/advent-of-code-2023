@@ -3,19 +3,12 @@
 import io
 import re
 
-class Box
-    construct()
-        this.lenses = []
-    end
-
-    fun findLens(label)
-        for var i, lens in this.lenses.enumerate()
-            if lens[0] == label
-                return i
-            end
-        end
-        return -1
-    end
+fun findLens(box, label)
+    var lens = box.enumerate().find(fun(args)
+        var idx, lens = args
+        return lens[0] == label
+    end)
+    return lens[0] if lens else null
 end
 
 fun hash(str)
@@ -23,37 +16,35 @@ fun hash(str)
 end
 
 with io.File(argv[0], "r") f
-    var lines = f.
+    var instrs = f.
         readAll().
         split(",").
         map(|line| => line.strip()).
+        map(|line| => re.match(line, "(.+)([=-])(%d?)")).
         collect(Tuple)
     
-    var instrs = lines.
-        map(|instr| => re.match(instr, "(.+)([=-])(%d?)")).
-        collect(Tuple)
+    var boxes = List(256, |_| => [])
 
-    var boxes = List(256, |_| => Box())
     for var label, instr, focal in instrs
         var box = boxes[hash(label)]
-        var lens = box.findLens(label)
+        var lens = findLens(box, label)
 
         if instr == "-"
-            if lens != -1
-                box.lenses.removeAt(lens)
+            if lens
+                box.removeAt(lens)
             end
         else
-            if lens != -1 
-                box.lenses[lens] = (label, focal)
+            if lens 
+                box[lens] = (label, focal)
             else
-                box.lenses.add((label, focal))
+                box.add((label, focal))
             end
         end
     end
     
     var res = boxes.enumerate().map(fun(args)
         var boxIdx, box = args
-        return box.lenses.enumerate().map(fun(args)
+        return box.enumerate().map(fun(args)
             var lensIdx, lens = args
             return (boxIdx + 1) * (lensIdx + 1) * std.int(lens[1])
         end).sum()
