@@ -1,0 +1,63 @@
+#!/usr/bin/env jstar
+
+import io
+import re
+
+class Box
+    construct()
+        this.lenses = []
+    end
+
+    fun findLens(label)
+        for var i, lens in this.lenses.enumerate()
+            if lens[0] == label
+                return i
+            end
+        end
+        return -1
+    end
+end
+
+fun hash(str)
+    return str.reduce(0, |acc, c| => (acc + std.char(c)) * 17 & 255)
+end
+
+with io.File(argv[0], "r") f
+    var lines = f.
+        readAll().
+        split(",").
+        map(|line| => line.strip()).
+        collect(Tuple)
+    
+    var instrs = lines.
+        map(|instr| => re.match(instr, "(.+)([=-])(%d?)")).
+        collect(Tuple)
+
+    var boxes = List(256, |_| => Box())
+    for var label, instr, focal in instrs
+        var box = boxes[hash(label)]
+        var lens = box.findLens(label)
+
+        if instr == "-"
+            if lens != -1
+                box.lenses.removeAt(lens)
+            end
+        else
+            if lens != -1 
+                box.lenses[lens] = (label, focal)
+            else
+                box.lenses.add((label, focal))
+            end
+        end
+    end
+    
+    var res = boxes.enumerate().map(fun(args)
+        var boxIdx, box = args
+        return box.lenses.enumerate().map(fun(args)
+            var lensIdx, lens = args
+            return (boxIdx + 1) * (lensIdx + 1) * std.int(lens[1])
+        end).sum()
+    end).sum()
+
+    print(res)
+end
