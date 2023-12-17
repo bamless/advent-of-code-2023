@@ -1,0 +1,133 @@
+#!/usr/bin/env jstar
+
+import io
+import sys
+import math
+
+var UP, DOWN, LEFT, RIGHT = (0, -1), (0, 1), (-1, 0), (1, 0)
+
+var REFLECTIONS = {
+    ".": {
+        LEFT: (LEFT,),
+        RIGHT: (RIGHT,),
+        UP: (UP,),
+        DOWN: (DOWN,),
+    },
+    "|": {
+        LEFT: (UP, DOWN),
+        RIGHT: (UP, DOWN),
+        UP: (UP,),
+        DOWN: (DOWN,),
+    },
+    "-": {
+        LEFT: (LEFT,),
+        RIGHT: (RIGHT,),
+        UP: (LEFT,RIGHT),
+        DOWN: (LEFT, RIGHT),
+    },
+    "/": {
+        LEFT: (DOWN,),
+        RIGHT: (UP,),
+        UP: (RIGHT,),
+        DOWN: (LEFT,),
+    },
+    "\\": {
+        LEFT: (UP,),
+        RIGHT: (DOWN,),
+        UP: (LEFT,),
+        DOWN: (RIGHT,),
+    }
+}
+
+fun inBounds(map, x, y)
+    return x >= 0 and x < #map[0] and y >= 0 and y < #map
+end
+
+fun visualize(map, seen)
+    sys.system("clear")
+
+    for var y = 0; y < #map; y += 1
+        var line = []
+        for var x = 0; x < #map[0]; x += 1
+            if map[y][x] != "."
+                line.add(map[y][x])
+            elif seen[(x, y)]
+                line.add("#")
+            else
+                line.add(".")
+            end
+        end
+        print(line.join())
+    end
+
+    sys.system("sleep 0.05")
+end
+
+fun explore(map, start, dir)
+    var illuminated = 0
+
+    var seen = {}
+    var stack = [(start, dir)]
+
+    while #stack != 0
+        var posDir = stack.pop()
+
+        var dir = posDir[1]
+        var pos = posDir[0]
+
+        if seen[pos] and seen[pos].find(|d| => d == dir) or !inBounds(map, pos[0], pos[1])
+            continue
+        end
+
+        if !seen[pos]
+            illuminated += 1
+        end
+
+        seen[pos] = seen[pos] or []
+        seen[pos].add(dir)
+
+        var x, y = pos 
+        var tile = map[y][x]
+        var reflections = REFLECTIONS[tile][dir]
+
+        for var newDir in reflections
+            var newX, newY = x + newDir[0], y + newDir[1]
+            stack.add(((newX, newY), newDir))
+        end
+    end
+
+    return illuminated
+end
+
+fun part1(map)
+    return explore(map, (0, 0), RIGHT) 
+end
+
+// Could memoize this, but brute force is fast enough and I can't be bothered
+fun part2(map)
+    var max = 0
+
+    for var x = 0; x < #map[0]; x += 1
+        var down = explore(map, (x, 0), DOWN)
+        var up = explore(map, (x, #map - 1), UP)
+        max = math.max(math.max(max, down), up)
+    end
+
+    for var y = 0; y < #map[0]; y += 1
+        var right = explore(map, (0, y), RIGHT)
+        var left = explore(map, (#map[0] - 1, y), LEFT)
+        max = math.max(math.max(max, right), left)
+    end
+
+    return max
+end
+
+with io.File(argv[0], "r") f
+    var map = f.
+        map(|line| => line.strip()).
+        collect(Tuple)
+
+    print("Part 1:", part1(map))
+    print("Part 2:", part2(map))
+
+end
