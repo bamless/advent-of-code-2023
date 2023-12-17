@@ -1,0 +1,151 @@
+#!/usr/bin/env jstar
+
+import io
+import math
+
+var UP, DOWN, LEFT, RIGHT = (0, 1), (0, -1), (-1, 0), (1, 0)
+
+fun clockwise(dir)
+    return dir[1], dir[0]
+end
+
+fun counterClockwise(dir)
+    return -dir[1], -dir[0]
+end
+
+fun parent(pos) 
+    return std.int(pos / 2)
+end
+  
+fun leftChild(pos) 
+    return 2 * pos 
+end
+
+fun rightChild(pos) 
+    return (2 * pos) + 1
+end
+
+fun isLeaf(heap, pos) 
+    return 2 * pos >= #heap - 1
+end
+
+fun heapify(heap, pos)
+    if !isLeaf(heap, pos)
+        if heap[pos] > heap[leftChild(pos)] or 
+           heap[pos] > heap[rightChild(pos)]
+            if heap[leftChild(pos)] < heap[rightChild(pos)]
+                heap[pos], heap[leftChild(pos)] = heap[leftChild(pos)], heap[pos]
+                heapify(heap, leftChild(pos))
+            else
+                heap[pos], heap[rightChild(pos)] = heap[rightChild(pos)], heap[pos]
+                heapify(heap, rightChild(pos))
+            end
+        end
+    end
+end
+
+fun insert(heap, element)
+    heap.add(element)
+
+    var curr = #heap - 1
+    while heap[curr] < heap[parent(curr)]
+        heap[curr], heap[parent(curr)] = heap[parent(curr)], heap[curr]
+        curr = parent(curr)
+    end
+end
+
+fun pop(heap)
+    var popped = heap[0]
+    heap[0] = heap[#heap - 1]
+    heap.pop()
+    heapify(heap, 0)
+    return popped
+end
+
+class State
+    construct(pos, dir, heatLoss)
+        this.pos = pos
+        this.dir = dir
+        this.heatLoss = heatLoss
+    end
+
+    fun __lt__(o)
+        return this.heatLoss < o.heatLoss
+    end
+
+    fun __gt__(o)
+        return this.heatLoss > o.heatLoss
+    end
+
+    fun __eq__(o)
+        return this.pos == o.pos and
+               this.dir == o.dir and
+               this.heatLoss == o.heatLoss
+    end
+
+    fun __hash__(o)
+        return this.pos.__hash__() +
+               this.dir.__hash__() +
+               this.heatLoss.__hash__()
+    end
+end
+
+fun inBounds(heatmap, v)
+    return v[0] >= 0 and v[0] < #heatmap[0] and v[1] >= 0 and v[1] < #heatmap
+end
+
+fun shortest(heatmap, min, max)
+    var endPos = (#heatmap[0] - 1, #heatmap - 1)
+    var seen = {}
+    var queue = []
+    insert(queue, State((0, 1), DOWN, 0))
+    insert(queue, State((1, 0), RIGHT, 0))
+
+    var minHeatLoss = math.huge
+    while #queue != 0
+        var s = pop(queue)
+        var key = (s.pos, s.dir)
+
+        if seen[key] and seen[key] <= s.heatLoss
+            continue
+        end
+
+        seen[key] = s.heatLoss
+       
+        var heatLoss, pos = s.heatLoss, s.pos
+        for var i = 1; i <= max; i += 1
+            if !inBounds(heatmap, pos)
+                break
+            end
+
+            heatLoss += heatmap[pos[1]][pos[0]]
+
+            if pos == endPos and i >= min and minHeatLoss > heatLoss
+                minHeatLoss = heatLoss
+            end
+
+            if i >= min 
+                var cw = clockwise(s.dir)
+                insert(queue, State((pos[0] + cw[0], pos[1] + cw[1]), cw, heatLoss))
+
+                var ccw = counterClockwise(s.dir)
+                insert(queue, State((pos[0] + ccw[0], pos[1] + ccw[1]), ccw, heatLoss))
+            end
+
+            pos = (pos[0] + s.dir[0], pos[1] + s.dir[1])
+        end
+
+    end
+
+    return minHeatLoss
+end
+
+
+with io.File(argv[0], "r") f
+    var heatmap = f.
+        map(|line| => line.strip().map(|c| => std.int(c)).collect(Tuple)).
+        collect(Tuple)
+
+    print("Part 1:", shortest(heatmap, 0, 3))
+    print("Part 2:", shortest(heatmap, 4, 10))
+end
