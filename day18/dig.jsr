@@ -1,0 +1,60 @@
+#!/usr/bin/env jstar
+
+import io
+import re
+import math
+
+var UP, DOWN, LEFT, RIGHT = (0, -1), (0, 1), (-1, 0), (1, 0)
+var DIRS = {"U": UP, "D": DOWN, "L": LEFT, "R": RIGHT}
+var NUM_DIRS = {"0": "R", "1": "D", "2": "L", "3": "U"}
+
+fun dig(plan)
+    var perimeter, vertices = 0, []
+
+    var pos = (0, 0)
+    for var p in plan
+        var d, num = p
+        pos = (pos[0] + DIRS[d][0] * num, pos[1] + DIRS[d][1] * num)
+
+        perimeter += num
+        vertices.add(pos)
+    end
+
+    return perimeter, vertices
+end
+
+fun area(perimeter, vertices)
+    var m1 = vertices.map(|v| => v[0]).concat((vertices[0][0],)).collect(Tuple)
+    var m2 = vertices.map(|v| => v[1]).concat((vertices[0][1],)).collect(Tuple)
+    var s1 = m1.zip(m2.skip(1)).map(|m| => m[0] * m[1]).sum()
+    var s2 = m1.skip(1).zip(m2).map(|m| => m[0] * m[1]).sum()
+    return (math.abs(s1 - s2) + perimeter) / 2 + 1
+end
+
+fun decode(plan)
+    var hex = plan.
+        map(|p| => p[2]).
+        map(|hex| => (NUM_DIRS[hex[5, #hex]], Number("0x" + hex[0, 5]))).
+        collect(Tuple)
+    return hex
+end
+
+fun part1(plan)
+    var perimeter, vertices = dig(plan)
+    return area(perimeter, vertices)
+end
+
+fun part2(plan)
+    var perimeter, vertices = dig(decode(plan))
+    return area(perimeter, vertices)
+end
+
+with io.File(argv[0], "r") f
+    var plan = f.
+        map(|line| => re.match(line.strip(), "(%a) (%d+) %(#(.+)%)")).
+        map(|args| => (args[0], std.int(args[1]), args[2])).
+        collect(Tuple)
+
+    print("Part 1:", part1(plan))
+    print("Part 2:", part2(plan))
+end
