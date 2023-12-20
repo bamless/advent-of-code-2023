@@ -1,0 +1,225 @@
+#!/usr/bin/env jstar
+
+import io
+import re
+
+class Part
+    construct(x, m, a, s)
+        this.x = std.int(x)
+        this.m = std.int(m)
+        this.a = std.int(a)
+        this.s = std.int(s)
+    end
+
+    fun __get__(name)
+        if name == "x"
+            return this.x
+        elif name == "m"
+            return this.m
+        elif name == "a"
+            return this.a
+        elif name == "s"
+            return this.s
+        end
+        assert(false, "Unreachable")
+    end
+end
+
+class BinaryInstr
+    construct(op, field, val, thenInstr, elseInstr)
+        this.op = op
+        this.field = field
+        this.val = val
+        this.thenInstr = thenInstr
+        this.elseInstr = elseInstr
+    end
+
+    fun accept(visitor)
+        return visitor.visitBinary(this)
+    end
+end
+
+class FieldInstr
+    construct(field)
+        this.field = field
+    end
+
+    fun accept(visitor)
+        return visitor.visitField(this)
+    end
+end
+
+class WorkflowInstr
+    construct(workflow)
+        this.workflow = workflow
+    end
+
+    fun accept(visitor)
+        return visitor.visitWorkflow(this)
+    end
+end
+
+class AcceptInstr
+    fun accept(visitor)
+        return visitor.visitAccept(this)
+    end
+end
+
+class RejectInstr
+    fun accept(visitor)
+        return visitor.visitReject(this)
+    end
+end
+
+fun parseLit(lit)
+    if lit == "A"
+        return AcceptInstr()
+    elif lit == "R"
+        return RejectInstr()
+    else
+        return WorkflowInstr(lit)
+    end
+end
+
+fun parseBin(instrs, idx)
+    var f, op, val, lit = re.match(instrs[idx], "(%a)([<>])(%d+):(.*)")
+    return BinaryInstr(op, FieldInstr(f), Number(val), parseLit(lit), parseInstr(instrs, idx + 1))
+end
+
+fun parseInstr(instrs, idx=0)
+    var i = instrs[idx]
+    if i.contains(">") or i.contains("<")
+        return parseBin(instrs, idx)
+    else
+        return parseLit(i)
+    end
+end
+
+fun parseWorkflows(workflows)
+    var parsedWorkflows = {}
+    for var w in workflows.split("\n")
+        var name, instrs = re.match(w, "(%a+){(.*)}")
+        var instr = parseInstr(instrs.split(","))
+        parsedWorkflows[name] = instr
+    end
+    return parsedWorkflows
+end
+
+fun parseParts(parts)
+    return parts.
+        split("\n").
+        map(|p| => re.match(p, "{x=(%d+),m=(%d+),a=(%d+),s=(%d+)}")).
+        map(|args| => Part(...args)).
+        collect(Tuple)
+end
+
+class EvalVisitor
+    construct(part, workflows)
+        this.part = part
+        this.workflows = workflows
+    end
+
+    fun visitBinary(bin)
+        var val = bin.field.accept(this)
+        if bin.op == "<" and val < bin.val
+            return bin.thenInstr.accept(this)
+        elif bin.op == ">" and val > bin.val
+            return bin.thenInstr.accept(this)
+        else
+            return bin.elseInstr.accept(this)
+        end
+    end
+
+    fun visitWorkflow(w)
+        return this.workflows[w.workflow].accept(this)
+    end
+
+    fun visitField(field)
+        return this.part[field.field]
+    end
+
+    fun visitAccept(_)
+        return "A"
+    end
+
+    fun visitReject(_)
+        return "R"
+    end
+end
+
+class CombinationVisitor
+    construct(workflows)
+        this.workflows = workflows
+        this.mins = {"x": 1, "m": 1, "a": 1, "s": 1}
+        this.maxs = {"x": 4000, "m": 4000, "a": 4000, "s": 4000}
+    end
+
+    fun visitBinary(bin)
+        var field, res = bin.field.field, 0
+        
+        if bin.op == ">"
+            var oldMin = this.mins[field]
+            this.mins[field] = bin.val + 1
+            res += bin.thenInstr.accept(this)
+            this.mins[field] = oldMin
+
+            var oldMax = this.maxs[field]
+            this.maxs[field] = bin.val
+            res += bin.elseInstr.accept(this)
+            this.maxs[field] = oldMax
+        elif bin.op == "<"
+            var oldMax = this.maxs[field]
+            this.maxs[field] = bin.val - 1
+            res += bin.thenInstr.accept(this)
+            this.maxs[field] = oldMax
+
+            var oldMin = this.mins[field]
+            this.mins[field] = bin.val
+            res += bin.elseInstr.accept(this)
+            this.mins[field] = oldMin
+        end
+
+        return res
+    end
+
+    fun visitWorkflow(w)
+        return this.workflows[w.workflow].accept(this)
+    end
+
+    fun visitAccept(_)
+        var mins, maxs = this.mins, this.maxs
+        return "xmas".map(|k| => maxs[k] - mins[k] + 1).reduce(1, |a, b| => a * b)
+    end
+
+    fun visitReject(_)
+        return 0
+    end
+end
+
+fun part1(workflows, parts)
+    var start, num = workflows["in"], 0
+    for var part in parts
+        var visitor = EvalVisitor(part, workflows)
+        var res = start.accept(visitor)
+        if res == "A"
+            num += part.x + part.m + part.a + part.s
+        end
+    end
+    return num
+end
+
+fun part2(workflows)
+    var start = workflows["in"]
+    var visitor = CombinationVisitor(workflows)
+    return start.accept(visitor)
+end
+
+with io.File(argv[0], "r") f
+    var workflowRatings = f.readAll().strip().split("\n\n")
+
+    var workflows = parseWorkflows(workflowRatings[0])
+    var parts = parseParts(workflowRatings[1])
+
+    print("Part 1:", part1(workflows, parts))
+    print("Part 2:", part2(workflows))
+end
