@@ -147,7 +147,7 @@ class EvalVisitor
     end
 end
 
-class CombinationVisitor
+class CombinationsVisitor
     construct(workflows)
         this.workflows = workflows
         this.mins = {"x": 1, "m": 1, "a": 1, "s": 1}
@@ -210,7 +210,7 @@ end
 
 fun part2(workflows)
     var start = workflows["in"]
-    var visitor = CombinationVisitor(workflows)
+    var visitor = CombinationsVisitor(workflows)
     return start.accept(visitor)
 end
 
