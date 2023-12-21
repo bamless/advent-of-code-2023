@@ -1,0 +1,124 @@
+static var STARTING_SZ = 2
+assert(STARTING_SZ & 1 == 0, "STARTING_SZ must be a power of 2")
+
+/// Deque implements a double ended queue that supports efficient element insertion and removal at
+/// both ends.
+/// The queue is implemented using a circular buffer in an attempt to limit allocations to a minimum.
+class Deque is iter.Iterable
+    construct()
+        this._buffer = null
+        this._start = 0
+        this._end = 0
+        this._size = 0
+        this._capacityMask = 0
+    end
+
+    fun pushBack(elem)
+       if !this._buffer or this._size == #this._buffer
+            this._grow()
+        end
+        this._buffer[this._end] = elem
+        this._end = (this._end + 1) & this._capacityMask
+        this._size += 1
+    end
+
+    fun popBack()
+        if this._size == 0
+            raise IndexOutOfBoundException("No elements to pop from the back")
+        end
+        this._end = (this._end - 1) & this._capacityMask
+        var elem = this._buffer[this._end]
+        this._buffer[this._end] = null
+        this._size -= 1
+        return elem
+    end
+
+    fun peekBack(n=0)
+        if this._size - n <= 0
+            return null
+        end
+        return this._buffer[(this._end - n - 1) & this._capacityMask]
+    end
+    
+    fun pushFront(elem)
+        if !this._buffer or this._size == #this._buffer
+            this._grow()
+        end
+        var idx = (this._start - 1) & this._capacityMask
+        this._start = idx
+        this._buffer[idx] = elem
+        this._size += 1
+    end
+
+    fun popFront()
+        if this._size == 0
+            raise IndexOutOfBoundException("No elements to pop from the front")
+        end
+        var elem = this._buffer[this._start]
+        this._buffer[this._start] = null
+        this._start = (this._start + 1) & this._capacityMask
+        this._size -= 1
+        return elem
+    end
+
+    fun peekFront(n=0)
+        if this._size - n <= 0
+            return null
+        end
+        return this._buffer[(this._start + n) & this._capacityMask]
+    end
+
+    fun clear()
+        while this._size > 0
+            this.popBack()
+        end
+    end
+
+    fun __len__()
+        return this._size
+    end
+
+    fun __string__()
+        return "Deque({0})" % this.collect(Tuple).join(", ")
+    end
+
+    fun __iter__(idx)
+        if this._size == 0
+            return false
+        end
+        if !idx
+            return this._start
+        end
+        var next = (idx + 1) & this._capacityMask
+        return next if next != this._end else false
+    end
+
+    fun __next__(idx)
+        return this._buffer[idx]
+    end
+
+    fun _grow()
+        var oldBuffer = this._buffer
+        var oldCapacity = this._capacityMask
+        var newSize = #oldBuffer * 2 if oldBuffer else STARTING_SZ
+        var newBuffer = List(newSize)
+
+        if oldBuffer
+            var idx, newIdx = this._start, 0
+            for ;;
+                newBuffer[newIdx] = oldBuffer[idx]
+
+                idx = (idx + 1) & oldCapacity
+                if idx == this._end
+                    break
+                end
+
+                newIdx += 1
+            end
+        end
+
+        this._buffer = newBuffer
+        this._start, this._end = 0, this._size
+        this._capacityMask = newSize - 1
+    end
+end

@@ -1,0 +1,156 @@
+#!/usr/bin/env jstar
+
+import io
+import deque for Deque
+
+class Module
+    construct(name, inputs=null, destinations=null)
+        this.name = name
+        this.inputs = inputs or []
+        this.destinations = destinations or []
+    end
+end
+
+class Broadcaster is Module
+    construct(name, inputs=null, destinations=null)
+        super(name, inputs, destinations)
+    end
+
+    fun receive(input)
+        var _, __, pulse = input
+        var self = this
+        return this.destinations.map(|d| => (self, d, pulse)) 
+    end
+end
+
+class FlipFlop is Module
+    construct(name, inputs=null, destinations=null)
+        super(name, inputs, destinations)
+        this.state = false
+    end
+
+    fun receive(input)
+        var _, __, pulse = input
+        if pulse
+            return []
+        end
+
+        var outPulse = false if this.state else true
+        this.state = !this.state
+
+        var self = this
+        return this.destinations.map(|d| => (self, d, outPulse))
+    end
+end
+
+class Conjunction is Module
+    construct(name, inputs=null, destinations=null)
+        super(name, inputs, destinations)
+        this.memory = {}
+    end
+
+    fun receive(input)
+        var sender, _, pulse = input
+        this.memory[sender] = pulse
+
+        var outPulse = false
+        for var input in this.inputs
+            if !this.memory[input] 
+                outPulse = true
+                break
+            end
+        end
+        
+        var self = this
+        return this.destinations.map(|d| => (self, d, outPulse))
+    end
+end
+
+
+class CounterModule is Module
+    construct(name)
+        super(name, [], [])
+        this.counter = {false: 0, true: 0}
+    end
+
+    fun receive(input)
+        var _, __, pulse = input
+        this.counter[pulse] += 1
+        return []
+
+    end
+end
+
+fun parseModules(lines)
+    var inouts = {}
+    for var line in lines.split("\n")
+        var from, dests = line.split(" -> ")
+        inouts[from] = dests.split(", ")
+    end
+
+    var modules = {}
+    for var mod in inouts
+        var type = mod[0]
+        if type == "%"
+            var name = mod[1, #mod] 
+            modules[name] = FlipFlop(name)
+        elif type == "&"
+            var name = mod[1, #mod] 
+            modules[name] = Conjunction(name)
+        else
+            modules[mod] = Broadcaster(mod)
+        end
+    end
+
+    for var name in modules
+        var mod = modules[name]
+        if mod is FlipFlop
+            name = "%" + name
+        elif mod is Conjunction
+            name = "&" + name
+        end
+
+        for var out in inouts[name] or []
+            var dest = modules[out]
+            if !dest
+                dest = CounterModule(out)
+                modules[out] = dest
+            end
+
+            mod.destinations.add(dest)
+            dest.inputs.add(mod)
+        end
+    end
+
+    return modules
+end
+
+fun eval(modules, buttonPresses)
+    var queue = Deque()
+
+    // true -> high, false -> low
+    var pulses = {true: 0, false: 0}
+
+    for var i = 0; i < buttonPresses; i += 1
+        queue.pushBack((null, modules["broadcaster"], false))
+        pulses[false] += 1
+
+        while #queue != 0
+            var sender, dest, pulse = queue.popFront()
+            var res = dest.receive((sender, dest, pulse))
+
+            for var r in res
+                var _, __, resPulse = r
+                queue.pushBack(r)
+                pulses[resPulse] += 1
+            end
+        end
+    end
+
+    return pulses[true] * pulses[false]
+end
+
+with io.File(argv[0], "r") f
+    var modules = parseModules(f.readAll().strip())
+    print("Part 1:", eval(modules, 1000))
+end
